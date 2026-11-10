@@ -1,0 +1,19 @@
+{
+ "version": 4,
+ "purchaseLimit": {
+  "amount": "10.00",
+  "currency": "USD"
+ },
+ "recurringLimit": {
+  "amount": "500.00",
+  "currency": "USD",
+  "period": "month"
+ },
+ "customLimit": null,
+ "ruleId": "rule_fixture_1",
+ "status": "active",
+ "evaluatedAt": "2026-11-10T07:00:00Z",
+ "configurationActive": true,
+ "additionalLimits": [],
+ "usage": {}
+}

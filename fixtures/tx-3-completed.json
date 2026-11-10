@@ -1,0 +1,52 @@
+{
+ "id": "tx_fixture_1",
+ "tenantId": "tenant_fixture",
+ "status": "completed",
+ "version": "v3",
+ "purchase": {
+  "type": "ucp_checkout",
+  "assertedBy": "merchant",
+  "merchant": {
+   "origin": "https://shop.example"
+  },
+  "total": {
+   "amount": "19.99",
+   "currency": "USD"
+  },
+  "lineItems": [
+   {
+    "title": "Mug",
+    "itemId": "item_123",
+    "quantity": 1,
+    "unitAmount": "19.99"
+   }
+  ],
+  "revision": 1
+ },
+ "approvals": {
+  "fixture": "shape unknown: approvals is an untyped object in the published schema"
+ },
+ "order": {
+  "outcome": "confirmed",
+  "id": "gid://shopify/Order/1",
+  "label": "#1008",
+  "permalinkUrl": "https://shop.example/orders/1",
+  "links": [
+   {
+    "type": "refund_policy",
+    "url": "https://shop.example/policies/refund-policy",
+    "title": "Refund policy"
+   }
+  ]
+ },
+ "outcome": "success",
+ "createdAt": "2026-11-10T07:00:00Z",
+ "updatedAt": "2026-11-10T07:03:00Z",
+ "authorizedAt": "2026-11-10T07:02:00Z",
+ "completedAt": "2026-11-10T07:03:00Z",
+ "payment": {
+  "id": "pay_fixture_1",
+  "paymentCardId": "card_fixture_1",
+  "status": "pending"
+ }
+}

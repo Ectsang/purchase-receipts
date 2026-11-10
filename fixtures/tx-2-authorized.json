@@ -1,0 +1,40 @@
+{
+ "id": "tx_fixture_1",
+ "tenantId": "tenant_fixture",
+ "status": "authorized",
+ "version": "v2",
+ "purchase": {
+  "type": "ucp_checkout",
+  "assertedBy": "merchant",
+  "merchant": {
+   "origin": "https://shop.example"
+  },
+  "total": {
+   "amount": "19.99",
+   "currency": "USD"
+  },
+  "lineItems": [
+   {
+    "title": "Mug",
+    "itemId": "item_123",
+    "quantity": 1,
+    "unitAmount": "19.99"
+   }
+  ],
+  "revision": 1
+ },
+ "approvals": {
+  "fixture": "shape unknown: approvals is an untyped object in the published schema"
+ },
+ "order": null,
+ "outcome": null,
+ "createdAt": "2026-11-10T07:00:00Z",
+ "updatedAt": "2026-11-10T07:02:00Z",
+ "authorizedAt": "2026-11-10T07:02:00Z",
+ "completedAt": null,
+ "payment": {
+  "id": "pay_fixture_1",
+  "paymentCardId": "card_fixture_1",
+  "status": "pending"
+ }
+}
