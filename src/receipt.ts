@@ -15,6 +15,8 @@ import { amountWithinLimit } from "./amount.js";
 export const RECEIPT_SCHEMA = "purchase-receipt/v0";
 const ALG = "ES256";
 
+/** The next step that asks the buyer to confirm on the provider's hosted page (Sapiom `nextAction.type`). */
+const BUYER_STEP = "buyer_security_code";
 /** Statuses at which the buyer's approval is in play (Sapiom TransactionResponseDto.status). */
 const APPROVAL_STATUSES = new Set(["waiting_approval", "authorized"]);
 const FINAL_STATUSES = new Set(["completed", "denied", "cancelled"]);
@@ -37,6 +39,10 @@ export interface TransactionSnapshot {
   authorizedAt: string | null;
   completedAt: string | null;
   paymentCardId: string | null;
+  /** The provider's purchase revision (Sapiom `purchase.revision`); null when absent or captured before v0.1. */
+  revision?: number | null;
+  /** The provider's next step (Sapiom `nextAction.type`), e.g. `buyer_security_code`. */
+  nextAction?: string | null;
 }
 
 export interface LimitsSnapshot {
@@ -114,7 +120,7 @@ export async function appendReceipt(
 }
 
 export interface ChainFinding {
-  kind: "limits_changed_after_approval" | "over_purchase_limit" | "order_outcome_unknown";
+  kind: "limits_changed_after_approval" | "over_purchase_limit" | "order_outcome_unknown" | "authorized_without_buyer_step";
   detail: string;
 }
 
@@ -178,9 +184,43 @@ function findingsFor(receipts: Receipt[]): ChainFinding[] {
       break;
     }
   }
+  out.push(...authorizedWithoutBuyerStep(receipts));
   const lastOrder = receipts[receipts.length - 1]?.transaction.order as { outcome?: unknown } | null | undefined;
   if (lastOrder && lastOrder.outcome === "unknown") {
     out.push({ kind: "order_outcome_unknown", detail: "latest receipt records the merchant order outcome as unknown" });
+  }
+  return out;
+}
+
+const money = (m: Money | null) => (m ? `${m.amount} ${m.currency}` : "no total");
+
+/**
+ * Each revision that reaches `authorized` should have a captured buyer step at that same revision
+ * earlier in the chain. Keyed on revision, not total: a changed checkout can ask the buyer again even
+ * at the same total. Not applicable when the revision was not captured (chains from before v0.1).
+ */
+function authorizedWithoutBuyerStep(receipts: Receipt[]): ChainFinding[] {
+  const out: ChainFinding[] = [];
+  const buyerStepAt = new Map<number, Receipt>();
+  let lastConfirmed: Receipt | null = null;
+  const reported = new Set<number>();
+  for (const r of receipts) {
+    const rev = r.transaction.revision;
+    if (typeof rev !== "number") continue;
+    if (r.transaction.nextAction === BUYER_STEP && !buyerStepAt.has(rev)) buyerStepAt.set(rev, r);
+    if (r.transaction.status !== "authorized" || reported.has(rev)) continue;
+    reported.add(rev);
+    if (buyerStepAt.has(rev)) {
+      lastConfirmed = r;
+      continue;
+    }
+    const prior = lastConfirmed
+      ? `last revision the buyer confirmed (buyer step, then authorized): rev ${lastConfirmed.transaction.revision} (${money(lastConfirmed.transaction.total)})`
+      : "no buyer step captured at any revision";
+    out.push({
+      kind: "authorized_without_buyer_step",
+      detail: `rev ${rev} (${money(r.transaction.total)}) authorized at ${r.transaction.authorizedAt ?? r.capturedAt} with no buyer step captured at rev ${rev}; ${prior}`,
+    });
   }
   return out;
 }

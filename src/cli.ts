@@ -91,7 +91,9 @@ async function verify(args: string[]) {
   for (const r of result.receipts) {
     const lim = r.limits ? `limits v${r.limits.version}` : "no limits";
     const total = r.transaction.total ? `${r.transaction.total.amount} ${r.transaction.total.currency}` : "-";
-    console.log(`  ${r.capturedAt}  ${r.transaction.status.padEnd(16)} total ${total}  ${lim}`);
+    const rev = typeof r.transaction.revision === "number" ? `rev ${r.transaction.revision}` : "rev -";
+    const next = r.transaction.nextAction ? `  next ${r.transaction.nextAction}` : "";
+    console.log(`  ${r.capturedAt}  ${r.transaction.status.padEnd(16)} ${rev.padEnd(6)} total ${total}  ${lim}${next}`);
   }
   for (const f of result.findings) console.log(`  finding: ${f.kind}: ${f.detail}`);
   process.exitCode = result.valid ? 0 : 1;

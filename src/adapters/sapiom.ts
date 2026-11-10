@@ -44,6 +44,8 @@ export function toTransactionSnapshot(tx: unknown): TransactionSnapshot {
     authorizedAt: str(t.authorizedAt),
     completedAt: str(t.completedAt),
     paymentCardId: str(obj(t.payment)?.paymentCardId),
+    revision: typeof obj(purchase)?.revision === "number" ? (obj(purchase)!.revision as number) : null,
+    nextAction: str(obj(t.nextAction)?.type),
   };
 }
 

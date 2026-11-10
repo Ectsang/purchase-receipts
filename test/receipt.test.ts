@@ -124,3 +124,65 @@ test("adapter reads the card id from the transaction's payment", async () => {
   assert.deepEqual(tx.total, { amount: "19.99", currency: "USD" });
   assert.throws(() => toLimitsSnapshot("c", { purchaseLimit: null }), /integer version/);
 });
+
+// --- v0.1: buyer step per revision (shape taken from the live sandbox run, 2026-11-10 09:46-09:51 UTC) ---
+
+function liveShapedTx(rev: number, status: string, next: string, total: string, authorizedAt: string | null = null) {
+  return toTransactionSnapshot({
+    id: "01a1c4da-604a-739e-956b-a5a9b4dac15d",
+    status,
+    version: `v-${rev}-${status}`,
+    purchase: { type: "ucp_checkout", assertedBy: "merchant", total: { amount: total, currency: "USD" }, revision: rev },
+    nextAction: { type: next },
+    approvals: [],
+    order: { outcome: "not_confirmed" },
+    authorizedAt,
+    payment: { paymentCardId: "01a1c450-7650-7bd9-8edb-59749eb4034b" },
+  });
+}
+
+async function chainOf(priv: JWK, txs: ReturnType<typeof liveShapedTx>[]) {
+  let chain: string[] = [];
+  for (const [i, tx] of txs.entries()) {
+    chain = await appendReceipt(chain, { provider: PROVIDER, capturedAt: `2026-11-10T09:${String(46 + i).padStart(2, "0")}:00Z`, transaction: tx, limits: null }, priv);
+  }
+  return chain;
+}
+
+const buyerStepFindings = (v: ChainVerification) => v.findings.filter((f) => f.kind === "authorized_without_buyer_step");
+
+test("authorized at a new revision with no buyer step at that revision is reported", async () => {
+  const { priv, pub } = await keys();
+  const chain = await chainOf(priv, [
+    liveShapedTx(1, "waiting_approval", "buyer_security_code", "11.00"),
+    liveShapedTx(1, "authorized", "payment_ready", "11.00", "2026-11-10T09:47:49.461Z"),
+    liveShapedTx(4, "authorized", "update_checkout", "14.00", "2026-11-10T09:49:50.124Z"),
+  ]);
+  const v = await verifyChain(chain, pub);
+  assert.equal(v.valid, true);
+  const f = buyerStepFindings(v);
+  assert.equal(f.length, 1);
+  assert.match(f[0]!.detail, /^rev 4 \(14\.00 USD\) authorized at 2026-11-10T09:49:50\.124Z/);
+  assert.match(f[0]!.detail, /last revision the buyer confirmed \(buyer step, then authorized\): rev 1 \(11\.00 USD\)/);
+});
+
+test("control: buyer step then authorized at the same revision is not reported", async () => {
+  const { priv, pub } = await keys();
+  const chain = await chainOf(priv, [
+    liveShapedTx(1, "waiting_approval", "buyer_security_code", "11.00"),
+    liveShapedTx(1, "authorized", "payment_ready", "11.00", "2026-11-10T09:47:49.461Z"),
+  ]);
+  assert.deepEqual(buyerStepFindings(await verifyChain(chain, pub)), []);
+});
+
+test("a new revision at the SAME total still needs its own buyer step", async () => {
+  const { priv, pub } = await keys();
+  const chain = await chainOf(priv, [
+    liveShapedTx(1, "waiting_approval", "buyer_security_code", "11.00"),
+    liveShapedTx(1, "authorized", "payment_ready", "11.00"),
+    liveShapedTx(2, "authorized", "payment_ready", "11.00"),
+  ]);
+  const f = buyerStepFindings(await verifyChain(chain, pub));
+  assert.equal(f.length, 1);
+  assert.match(f[0]!.detail, /^rev 2 \(11\.00 USD\)/);
+});

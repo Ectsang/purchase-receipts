@@ -78,3 +78,23 @@ Trusted timestamping (RFC 3161), Sapiom-side signing, browser purchases (`order`
 - `provider` field + `src/adapters/sapiom.ts` to keep the format provider-agnostic.
 - The check is named `naiveLimitComparison`: it ignores `recurringLimit`, `customLimit`, `additionalLimits`, `usage`. It is a demo signal, not a replay of Sapiom's enforcement.
 - Gap 1 reworded as a published-schema claim with the `approvals` caveat.
+
+## v0.1 — buyer step per revision (2026-11-10 ~09:55 UTC, after the live revision test)
+
+**What the sandbox showed** (tx `01a1c4da-604a-739e-956b-a5a9b4dac15d`, 09:46–09:51 UTC): the buyer confirmed revision 1 ($11.00) with their security code. After checkout changes, the transaction read `status: authorized` with a new `authorizedAt` at revision 4 ($14.00) and revision 5 ($18.00). The buyer took no step at either revision. No payment existed at those totals because the store refused the item, so nothing shows whether a security code would have been asked before money moved. `purchase` holds only the latest revision; there is no history endpoint. So `authorizedAt` is when the rules passed, not when the buyer agreed, and the record does not keep what the buyer agreed to once the checkout changes.
+
+**Change:**
+- `TransactionSnapshot` gains `revision` (`purchase.revision`, number or null) and `nextAction` (`nextAction.type`, string or null).
+- New finding `authorized_without_buyer_step`: for each revision that reaches `authorized` in the chain, look for an earlier receipt **at the same revision** whose `nextAction` is `buyer_security_code`. If there is none, report the revision, its total and the time, plus the last revision the buyer confirmed: a buyer step, then `authorized`, at that revision (and its total).
+- Not applicable (no finding) when `revision` is null, e.g. chains captured before v0.1.
+- Wording is "captured": the chain only knows what it saw. A capture gap can produce this finding. Live capture long-polls every `version` change, which is what makes the gap small.
+
+**Done means (each can fail):**
+
+| Check | Fails if |
+|---|---|
+| rev 1 buyer step → rev 1 authorized → rev 4 authorized ($14) | no finding, or detail omits "rev 1" / "11.00" |
+| rev 1 buyer step → rev 1 authorized only (control) | any `authorized_without_buyer_step` finding |
+| rev 1 buyer step → rev 2 authorized at the **same** total | no finding (revision, not total, is the key) |
+| Sabotage: match a buyer step at any revision | first test still passes (must not) |
+| Sabotage: key on total instead of revision | same-total test still passes (must not) |
