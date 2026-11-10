@@ -59,14 +59,21 @@ async function capture(args: string[]) {
     return;
   }
 
-  const client = new SapiomClient(process.env.SAPIOM_API_KEY ?? "");
+  const { SAPIOM_PLATFORM_KEY: platformKey, SAPIOM_TENANT_ID: tenantId } = process.env;
+  const client = new SapiomClient(process.env.SAPIOM_API_KEY ?? "", platformKey && tenantId ? { platformKey, tenantId } : undefined);
   const id = need(args, "--tx");
   let since: string | undefined;
   for (;;) {
     const tx = toTransactionSnapshot(await client.getTransaction(id, since));
     if (since !== undefined && tx.version === since) continue; // long-poll timed out with no change
     let limits: LimitsSnapshot | null = null;
-    if (tx.paymentCardId) limits = toLimitsSnapshot(tx.paymentCardId, await client.getSpendingLimits(tx.paymentCardId));
+    if (tx.paymentCardId) {
+      try {
+        limits = toLimitsSnapshot(tx.paymentCardId, await client.getSpendingLimits(tx.paymentCardId));
+      } catch (e) {
+        console.error(`limits not captured: ${(e as Error).message}`);
+      }
+    }
     chain = await appendReceipt(chain, { provider: PROVIDER, capturedAt: new Date().toISOString(), transaction: tx, limits }, privateKey);
     await appendFile(chainPath, chain[chain.length - 1] + "\n");
     console.log(`receipt ${chain.length - 1}: ${tx.status} (tx version ${tx.version}, limits v${limits?.version ?? "-"})`);

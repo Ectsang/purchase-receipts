@@ -60,12 +60,21 @@ export function toLimitsSnapshot(cardId: string, limits: unknown): LimitsSnapsho
 }
 
 export class SapiomClient {
-  constructor(private readonly apiKey: string, private readonly base = API_BASE) {
+  /**
+   * @param apiKey   buyer key: reads transactions.
+   * @param limitsAuth platform key + buyer id (`sapiom-tenant` header): reads spending limits. Buyer keys
+   *                 cannot read limits (403 "Missing required permissions: org.read", sandbox 2026-11-10).
+   */
+  constructor(
+    private readonly apiKey: string,
+    private readonly limitsAuth?: { platformKey: string; tenantId: string },
+    private readonly base = API_BASE,
+  ) {
     if (!apiKey) throw new Error("SAPIOM_API_KEY is empty");
   }
 
-  private async get(path: string): Promise<unknown> {
-    const res = await fetch(this.base + path, { headers: { "x-api-key": this.apiKey, accept: "application/json" } });
+  private async get(path: string, headers: Record<string, string> = { "x-api-key": this.apiKey }): Promise<unknown> {
+    const res = await fetch(this.base + path, { headers: { ...headers, accept: "application/json" } });
     if (!res.ok) throw new Error(`GET ${path} -> ${res.status} ${await res.text().catch(() => "")}`.slice(0, 500));
     return res.json();
   }
@@ -77,6 +86,9 @@ export class SapiomClient {
   }
 
   getSpendingLimits(cardId: string): Promise<unknown> {
-    return this.get(`/v1/payment-cards/${encodeURIComponent(cardId)}/spending-limits`);
+    const headers: Record<string, string> = this.limitsAuth
+      ? { "x-api-key": this.limitsAuth.platformKey, "sapiom-tenant": this.limitsAuth.tenantId }
+      : { "x-api-key": this.apiKey };
+    return this.get(`/v1/payment-cards/${encodeURIComponent(cardId)}/spending-limits`, headers);
   }
 }
