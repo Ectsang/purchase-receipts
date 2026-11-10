@@ -1,6 +1,6 @@
 {
   "name": "@goodmeta/purchase-receipts",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "Signed, hash-chained purchase receipts that can be checked offline. Adapter for Sapiom transactions.",
   "type": "module",
@@ -10,8 +10,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test test/*.test.ts",
-    "demo": "tsx examples/demo.ts"
+    "test": "node --import tsx --test test/*.test.ts"
   },
   "dependencies": {
     "jose": "6.2.3"

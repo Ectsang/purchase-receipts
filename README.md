@@ -31,7 +31,7 @@ VALID chain
   finding: authorized_without_buyer_step: rev 5 (18.00 USD) authorized at 2026-11-10T09:50:58.136Z with no buyer step captured at rev 5; last revision the buyer confirmed (buyer step, then authorized): rev 1 (11.00 USD)
 ```
 
-"no limits" because a dashboard-created sandbox platform key got `403 Missing required permissions: org.read` on `GET /v1/payment-cards/{id}/spending-limits`. Capture continues without them.
+"no limits" because a sandbox platform key got `403 Missing required permissions: org.read` on `GET /v1/payment-cards/{id}/spending-limits`. Sapiom's platform-keys page lists a platform key's permissions as `org.tenants.read`, `org.tenants.write` and `org.transactions.write`, while the spending-limits page says a platform key can read limits. Capture continues without them.
 
 ## What it proves, and what it does not
 
