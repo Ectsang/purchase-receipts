@@ -33,6 +33,8 @@ VALID chain
 
 "no limits" because a sandbox platform key got `403 Missing required permissions: org.read` on `GET /v1/payment-cards/{id}/spending-limits`. Sapiom's platform-keys page lists a platform key's permissions as `org.tenants.read`, `org.tenants.write` and `org.transactions.write`, while the spending-limits page says a platform key can read limits. Capture continues without them.
 
+Proposal for the provider-side fix, with diagrams: [docs/sapiom-buyer-confirmation.md](docs/sapiom-buyer-confirmation.md).
+
 ## What it proves, and what it does not
 
 - Proves: the record has not been edited since capture; no receipt in the middle was dropped, edited or reordered; what each revision showed and whether a buyer step was captured at it; which limits version was in force at each step, when the limits are readable.
