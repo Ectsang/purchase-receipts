@@ -16,7 +16,7 @@
     "jose": "6.2.3"
   },
   "devDependencies": {
-    "@types/node": "20.19.42",
+    "@types/node": "^20.19.42",
     "tsx": "4.21.0",
     "typescript": "5.9.3"
   }
