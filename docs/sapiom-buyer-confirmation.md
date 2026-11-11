@@ -73,6 +73,11 @@ The networks seem to be heading the same way. Visa's Oct 2026 rules add duties f
 - What a merchant should be able to read. SD-JWT selective disclosure fits here.
 - Key custody and rotation, and whether the buyer or platform should hold a copy.
 
+## Two smaller things I hit
+
+- **Spending limits return 403 with a platform key.** `GET /v1/payment-cards/{id}/spending-limits` with a sandbox platform key and the `sapiom-tenant` header returns 403 "Missing required permissions: org.read" (request `189dd1f7-5bf0-4689-9ed4-8839d4048250`), and the PUT returns the same for `org.write`. The [platform-keys page](https://docs.sapiom.ai/buyers/platform-keys.md) lists a platform key's permissions as `org.tenants.read`, `org.tenants.write` and `org.transactions.write`, while the [spending-limits page](https://docs.sapiom.ai/api-reference/spending-limits/get-spending-limits.md) says a platform key can read limits. One of the two pages seems off. Either way, I couldn't record which limits a purchase was checked against.
+- **Sandbox access.** The [sandbox docs](https://docs.sapiom.ai/sandbox.md) say to reach out for access, but the dashboard toggle worked for my org without asking.
+
 ## Feedback
 
 Tell me where this is wrong for how Sapiom works, either as an issue here or a reply to my email. If it's useful, next would be the record schema, test vectors from real sandbox transactions, and an offline verifier. This repo ([README](../README.md)) already captures and checks the platform-side version.
